@@ -43,7 +43,7 @@ int createDisk( int sizeInKB, char* path )
 */
 int readBlock( int blockNumber, char* blockData )
 {
-	int error;
+	int error, count;
 	if ((blockNumber >= _sizeInKB) || (blockNumber < 0))
 	{
 		strcpy( errorDesc, "Invalid block number\n" );
@@ -57,14 +57,23 @@ int readBlock( int blockNumber, char* blockData )
 		return -1;
 	}
 	//read 1 unit of 1024 bytes from file _physicalDisk to array blockData
-	error = fread( blockData, BLOCK_SIZE, 1, _physicalDisk );
-	if( error )
+	if(_physicalDisk == NULL)
+	{
+		strcpy(errorDesc, "Disk is NULL");
+		return -1;
+	}
+	//printf("Block Data is %s\n", blockData);
+	printf("Block Location is %d\n", blockNumber*BLOCK_SIZE);
+
+	count = fread( blockData,  BLOCK_SIZE, 1, _physicalDisk );
+	if(count == 0)
 	{
 		strcpy( errorDesc, "Couldn't read block\n" );
 		return -1;
 	}
 
 	return error;
+
 }
 
 /**
@@ -78,7 +87,7 @@ int readBlock( int blockNumber, char* blockData )
 */
 int writeBlock( int blockNumber, char* blockData, int numberOfBytes  )
 {
-	int error;
+	int error, count;
 	if ((blockNumber >= _sizeInKB) || (blockNumber < 0))
 	{
 		strcpy( errorDesc, "Invalid block number\n" );
@@ -95,8 +104,8 @@ int writeBlock( int blockNumber, char* blockData, int numberOfBytes  )
 	//else write the number of bytes
 	int len = (numberOfBytes > BLOCK_SIZE ? BLOCK_SIZE : numberOfBytes);
 	//read 1 unit of 1024 bytes from file _physicalDisk to array blockData
-	error = fwrite( blockData, len, 1, _physicalDisk );
-	if( error )
+	count = fwrite( blockData, len, 1, _physicalDisk );
+	if(count == 0)
 	{
 		strcpy( errorDesc, "Couldn't write block\n" );
 		return -1;
@@ -138,4 +147,27 @@ block_t * initializeBlockList(block_t * Block)
 	}
 
 	return currentBlock;
+}
+
+void closeDiskFile()
+{
+	int error;
+	error = fclose(_physicalDisk);
+	if(error == -1)
+	{
+		fprintf(stderr, "There was a problem closing the file\n");
+	}
+}
+void openDiskFile(char* path)
+{
+	_physicalDisk = fopen(path, "w+");
+	if(_physicalDisk == NULL)
+	{
+		fprintf(stderr, "There was a problem opening the file\n");
+	}
+}
+
+void printErrorDesc()
+{
+	fprintf(stderr, "\nError: %s\n", errorDesc);
 }
