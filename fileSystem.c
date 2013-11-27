@@ -79,36 +79,39 @@ fd_t* openf(char* name)
 	superBlock_t* spB = (superBlock_t*)malloc((sizeof(superBlock_t))+ 4);;
 	inode_t* nodep = (inode_t*)malloc((sizeof(inode_t))+ 4);
 	readSuperBlock(spB);
-	int i=0, j=1;
+	int i=1;
 	while (i <= (spB->_numberOfInodes))
 	{
 		//printSupBlock(spB);
-		readInode(nodep, j);
+		readInode(nodep, i);
 		if((strncmp(name, nodep->_filename, 11)) == 0)  //Exist !! open it!!
 		{
-			temp->inodeBlockNum = j;
+			temp->inodeBlockNum = i;
 			temp->fileptr = 0;
+			free(spB);
+			free(nodep);
 			return temp;
 		}
 		i++;
-		j++;
 	}
 	//printInodesTest(nodep);
 	// file not found, create one
 	if(spB->_numberOfDiskBlocks > 0)
 	{
-		i = 0, j = 1;
+		i = 1;
 		while(i <= (spB->_numberOfInodes))
 		{
-			readInode(nodep, j);
+			readInode(nodep, i);
 			if(nodep->_flags == 0)
 			{
-				temp->inodeBlockNum = j;
+				temp->inodeBlockNum = i;
 				temp->fileptr = 0;
+				writeInodeName(nodep, name, i);
+				free(spB);
+				free(nodep);
 				return temp;
 			}
 			i++;
-			j++;
 		}
 	}
 	free(spB);
@@ -238,10 +241,14 @@ void writeSuperBlock(superBlock_t* superBlock )
 	}
 	printf("\n");
 
-	for(i = 12; i < 1024; i++)
-	{
-		buffer[i] = 0;
-	}
+	int totalBlocks[4000];
+	goThroughArray(totalBlocks);
+	checkBlockList(totalBlocks);
+	writeBlockList(totalBlocks, buffer);
+//	for(i = 12; i < 1024; i++)
+//	{
+//		buffer[i] = 0;
+//	}
 	error = writeBlock(0, buffer, BLOCK_SIZE);
 	if(error)
 	{
@@ -262,6 +269,7 @@ void readInode(inode_t* inode, int blockNumber)
 {
 	int error, tempNum;
 	char block[BLOCK_SIZE];
+	clearBuffer(block);
 	// read block containing the Inode
     error = readBlock(blockNumber, block);
 
@@ -274,7 +282,7 @@ void readInode(inode_t* inode, int blockNumber)
     {
     	inode->_filename[i-12] = block[i];
     }
-    printf("\nFlag read in is: %d\n", flag);
+    //printf("\nFlag read in is: %d\n", flag);
 
     inode->_flags  = flag;
     inode->_owner = owner;
@@ -366,7 +374,14 @@ void printInode(inode_t* iNode)
  */
 void printFreeBlocks()
 {
-	// implement this function
+	int * blocks[4000];
+	int i;
+	for(i = 17; i < 4017; i++)
+	{
+		blocks[i] = i;
+		printf("%d ", blocks[i]);
+	}
+	checkBlockList(blocks);
 }
 
 
@@ -504,14 +519,121 @@ void writeBlockToInode(inode_t* node, int block)
 	}
 }
 
-void checkNode(inode_t* node)
+void updateFreeBlockList()
 {
-	if(node->pointer == NULL)
-	{
-		int i;
-		for(i = 0; i < MAX_POINTERS; i++)
+
+}
+
+int * getBlockList()
+{
+		int * arr = (int *) malloc(((sizeof(int))*1012) + 4);
+		int i, temp = 0;
+		for(i = 0; i < 1012; i++)
 		{
-			node->pointer[i] = -1;
+			arr[i] = 0;
 		}
+		
+		char * buffer[BLOCK_SIZE];
+		clearBuffer(buffer);
+		readBlock(0, buffer);
+		int j = 24, k = 0;
+		while(k < 1012)
+		{
+			temp = byteArrayToInt(buffer, j);
+			arr[k] = temp;
+ 			k++;
+			j = j + 4;
+		}
+		return arr;
+}
+
+void checkBlockList(int * blocks)
+{
+	inode_t* temp = (inode_t*)malloc((sizeof(inode_t)) + 4);
+	int i = 1, j;
+	while(i < 17)
+	{
+		j = 0;
+		readInode(temp, i);
+		while(j < MAX_POINTERS)
+		{
+			if(temp->pointer[j] != -1)
+			{
+				blocks[temp->pointer[j]] = 0;
+			}
+			j++;
+		}
+		i++;
 	}
+
+	printf("\nPrinting Free Blocks \n");
+	int k = 0, m = 0;
+	for(i = 0; i < 1012; i= i + 10)
+	{
+		for(k = 0; k < 10; k++)
+		{
+			printf("%d ", blocks[m]);
+			m++;
+		}
+		printf("\n");
+	}
+	printf("\n\n");
+}
+
+void writeBlockList(int * blocks, char * buffer)
+{
+	int i, j = 0, k;
+	for(i = 12; i < 1024; i = i+4)
+	{
+		while((blocks[j] == 0) && (j < 4000))
+		{
+			j++;
+		}
+
+		if(blocks[j] != 0)
+		{
+			intToByteArray(blocks[j], buffer, i);
+		}
+		else
+		{
+			intToByteArray(-1, buffer, i);
+		}
+		j++;
+	}
+	writeBlock(0, buffer, BLOCK_SIZE);
+	
+}
+
+void goThroughArray(int* blocks)
+{
+	int i;
+	for(i = 0; i < 4000; i++)
+	{
+		blocks[i] = i + 17;
+		printf("%d ", i);
+	}
+}
+
+void writeInodeName(inode_t* node, char * name, int blockNumber)
+{
+	strncpy(node->_filename, name, 11);
+	node->_filename[11] = '\0';
+	printf("buffer is %s\n", node->_filename);
+	char * buffer[BLOCK_SIZE];
+	clearBuffer(buffer);
+	readBlock(blockNumber, buffer);
+
+	int i = 0, j = 0;
+	char temp;
+	printf("\nCharacters are \n");
+	while(i < 12)
+	{
+		temp = node->_filename[i];
+		printf("%d \n", temp);
+		buffer[i + 2] = &temp;
+		i++;
+	}
+	printf("buffer is %s\n", node->_filename);
+
+	writeBlock(blockNumber, buffer, BLOCK_SIZE);
 }
