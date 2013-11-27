@@ -30,6 +30,9 @@ int createDisk(int sizeInKB, char* path );
 int readBlock(int blockNumber, char* blockData );
 int writeBlock(int blockNumber, char* blockData, int numberOfBytes  );
 int getSize();
+void closeDiskFile();
+void openDiskFile(char* path);
+void printErrorDesc();
 block_t * initializeBlockList(block_t* Block);
 
 //global
