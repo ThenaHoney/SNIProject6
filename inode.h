@@ -19,8 +19,8 @@ typedef struct inode
     int _owner;
     // indicates the size of the file
     int _filesize;
-	 // specifies the filename (up to 8 characters plus . plus 3 letter extension is allowed)
-	 char _filename[12];
+    // specifies the filename (up to 8 characters plus . plus 3 letter extension is allowed)
+    char _filename[12];
     // a list of direct pointers to data blocks of the file
     int pointer[MAX_POINTERS];
 } inode_t;
