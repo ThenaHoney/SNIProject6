@@ -82,6 +82,20 @@ superBlock_t * intializeSupBlock(superBlock_t* spBlck);
 
 void printSupBlock(superBlock_t* spBlck);
 
-void printInodesTest(inode_t * iNode);
+void printInode(inode_t * iNode);
+
+void initializeFreeBlockList();
+
+void clearBuffer(char* buf);
+
+void writeFreeBlocks(int blockNumber);
+
+int getNumInodes();
+
+int getNumBlocks();
+
+int getFirstFreeBlock();
+
+void writeBlockToInode(inode_t* node, int block);
 
 #endif /*FILESYSTEM_H_*/
