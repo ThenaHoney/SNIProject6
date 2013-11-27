@@ -18,7 +18,10 @@ void initializeInode(inode_t* inode)
 	inode->_flags = 0;
 	inode->_owner = 0;
 	inode->_filesize = 0;
-	inode->_filename[0] = '0';
+	for(i = 0; i < 12; i++)
+	{
+		inode->_filename[i] = '\0';
+	}
 
     for (i=0; i < MAX_POINTERS; i++)
     {
